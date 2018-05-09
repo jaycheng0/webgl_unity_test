@@ -1,0 +1,179 @@
+﻿<!doctype html>
+<html>
+<head>
+<title>Unity Scene Web Exporter</title>
+<meta charset="utf-8">
+<meta http-equiv="x-ua-compatible" content="ie=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link rel="stylesheet" href="./libs/pure-min.css">
+<link rel="stylesheet" href="./index.css">
+
+<script src="./libs/three.min.js"></script>
+<script src="./libs/stats.min.js"></script>
+<script src="./libs/kanau-utils.js"></script>
+<script src="./libs/OrbitControls.js"></script>
+<script src="./libs/TrackballControls.js"></script>
+</head>
+<style>
+    #control{
+        position: fixed;
+        top: 500px;
+        left: 50px;
+        cursor: pointer;
+        opacity: 0.9;
+        z-index: 10000;
+    }
+</style>
+<body>
+
+<div id="container"></div>
+<div id="control">
+    <button type="button" class="btn btn-info" onclick="isShow()">显示</button>
+    <button type="button" class="btn btn-info" onclick="change()">变化</button>
+</div>
+
+<script>
+    window.ga=function(){ga.q.push(arguments)};ga.q=[];ga.l=+new Date;
+    ga('create','UA-66505862-1','auto');ga('send','pageview')
+</script>
+<!--<script src="https://www.google-analytics.com/analytics.js" async defer></script>-->
+
+<script>
+var camera, scene, renderer, mixer;
+var stats;
+var controls;
+var clock = new THREE.Clock();
+
+function setupScene(result) {
+    scene = result;
+    //添加天空盒
+    scene.background = new THREE.CubeTextureLoader()
+        .setPath( 'skybox/' )
+        .load( [ 'px.png', 'nx.png', 'py.png', 'ny.png', 'pz.png', 'nz.png' ] );
+
+    camera = findByUserData(scene, "tag", "MainCamera");
+
+   /* ChangeMaterialTransparent("tielangan",0.5);
+
+    ShowGameObject("Cylinder2",false);*/
+
+    var winsize = renderer.getSize();
+    camera.aspect = winsize.width / winsize.height;
+    camera.updateProjectionMatrix();
+
+    controls = new THREE.OrbitControls( camera );
+    controls.target.set( 0, 0, 0 );
+    controls.update();
+
+    // for script variables demo
+    var scriptobj = findByUserData(scene, "tag", "Player");
+    if(scriptobj) {
+        funcForScriptVariables(scriptobj);
+	}
+	mixer = new THREE.AnimationMixer(scene);
+
+    if (scene.animations != null) {
+        var len = scene.animations.length;
+        for (var i = 0; i < len; i++) {
+            var animationClip = scene.animations[i];
+            animationClip.trim();
+            var action = mixer.clipAction(animationClip).setLoop(THREE.LoopOnce).startAt(animationClip.start);
+            action.clampWhenFinished = true;
+            action.weight = 255;
+            action.play();
+        }
+    }
+}
+
+function funcForScriptVariables(scriptobj) {
+    for(var key in scriptobj.userData) {
+        if(typeof(scriptobj.userData[key]) != "object") {
+            continue;
+        }
+        for(var k in scriptobj.userData[key]) {
+            console.log(key + ":" + JSON.stringify(scriptobj.userData[key][k]));
+        }
+    }
+}
+
+function init() {
+    var container = document.getElementById('container');
+
+    // stats
+    stats = new Stats();
+    stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
+    container.appendChild( stats.dom );
+
+    // three.js
+    renderer = new THREE.WebGLRenderer( { antialias: true } );
+    renderer.setClearColor( 0x333333 );
+    renderer.setPixelRatio( window.devicePixelRatio );
+    renderer.setSize( window.innerWidth, window.innerHeight );
+    container.appendChild( renderer.domElement );
+    
+    //window.addEventListener( 'resize', onWindowResize, false );
+
+
+    // loade scene
+    var loader = new THREE.ObjectLoader();
+    var url = './sample-threejs/simple-scene/scene.json';
+    loader.load(url, function(obj) {
+        setupScene(obj);
+    });
+};
+
+function onWindowResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize( window.innerWidth, window.innerHeight );
+
+    render();
+}
+
+function animate() {
+    stats.begin();
+	if (scene && camera) {
+		var delta = 0.75* clock.getDelta();
+
+		mixer.update(delta);
+		renderer.render(scene, camera);
+
+    }
+    stats.end();
+
+    requestAnimationFrame( animate );
+
+	if(controls) {
+        controls.update();
+    }
+}
+
+function ChangeMaterialTransparent(name,alpha){
+    var objFind = findByName(scene,name);
+    if (objFind) {
+        objFind.material.transparent = true;
+        objFind.material.opacity=objFind.material.opacity==alpha?(objFind.material.opacity=1):(objFind.material.opacity=alpha);
+    }
+}
+
+function ShowGameObject(name,show) {
+    var obj = findByName(scene,name);
+    if (obj) {
+        obj.visible=obj.visible==show?(obj.visible=true):(obj.visible==show);
+    }
+}
+
+init();
+requestAnimationFrame(animate);
+
+function isShow() {
+    ShowGameObject("Cylinder2",false);
+
+}
+function change() {
+    ChangeMaterialTransparent("tielangan",0.5);
+}
+</script>
+</body>
+</html>

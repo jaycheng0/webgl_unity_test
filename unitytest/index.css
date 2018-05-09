@@ -1,0 +1,22 @@
+body {
+    margin: 0 auto;
+    padding: 10px;
+
+}
+
+h1 {
+    text-align: center
+}
+
+h2 {
+    text-align: center
+}
+
+footer {
+    text-align: center
+}
+
+a.anchor-no-decoration, a.anchor-no-decoration:visited {
+    text-decoration: none;
+    color: #357daf
+}
